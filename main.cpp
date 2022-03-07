@@ -11,10 +11,9 @@
 #include <string.h>
 
 int check(int result){
-    if (result >= 0){
-        std::cout << "DONE!" << std::endl;
+    if (result >= 0)    
         return result;
-    }
+    
         
     perror(strerror(errno));
     exit(-1);
@@ -24,11 +23,8 @@ int main()
 {
     
     int keys_fd;
-    char ret[2];
-    struct input_event t;
-    
-    keys_fd = check(open("/dev/input/event2", O_RDONLY));
-    printf("%d\n", keys_fd);
+    struct input_event t;  
+    keys_fd = check(open(DEV_PATH, O_RDONLY));
     if (keys_fd <= 0)
     {
         printf("open/dev/input/event2 device error!\n");
@@ -42,8 +38,6 @@ int main()
                 if (t.value == 0 || t.value == 1)
                 {
                     printf("key %d %s\n", t.code, (t.value) ? "Pressed" : "Released");
-                    if (t.code == KEY_ESC)
-                        break;
                 }
         }
     }
