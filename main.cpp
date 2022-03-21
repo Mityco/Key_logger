@@ -9,7 +9,7 @@
 #include <iostream>
 #include <errno.h>
 #include <string.h>
-
+#include <string>
 int check(int result){
     if (result >= 0)    
         return result;
@@ -22,12 +22,16 @@ int check(int result){
 int main()
 {
     
-    int keys_fd;
+    int keys_fd; //дескриптор
+    std::string user;
+    std::cout << "Enter your name: ";
+    getline(std::cin, user);
+    std::cout << "Your name - " + user << std::endl;
     struct input_event t;  
     keys_fd = check(open(DEV_PATH, O_RDONLY));
     if (keys_fd <= 0)
     {
-        printf("open/dev/input/event2 device error!\n");
+        printf("open/dev/input/js0 device error!\n");
         return 0;
     }
     while (true)
