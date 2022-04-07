@@ -66,13 +66,17 @@ int main()
                    if (flag_shift == false && t.value == 1)
                    {
                        names.push_back(name_of_the_keys.get_name_of_the_key(t.code));   
-                       std::cout << "key " << name_of_the_keys.get_name_of_the_key(t.code) << std::endl;    
+                       std::cout << "key " << name_of_the_keys.get_name_of_the_key(t.code) << std::endl;
+                       std::cout << t.code << std::endl;    
                    }
                    
                 }
                 
-                if (t.code == 1)
+                if (t.code == 1){
+                    std::cout << t.code << std::endl;
                     break;
+                }
+                    
         }
 
         

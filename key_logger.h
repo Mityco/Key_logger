@@ -1,7 +1,7 @@
 #include <string>
 #include <map>
 class Key_logger{
-    std::map<unsigned short, const char*> keys; // unordered map 
+    std::map<unsigned short, const char*> keys; 
 public:
     Key_logger(){
         keys.insert({1,"ESC "});
@@ -134,6 +134,7 @@ public:
         keys.insert({1051,"< "});
         keys.insert({1052,"> "});
         keys.insert({1053,"? "});
+        keys.insert({1058,"CAPSLOCK1  "});
     }
 
     const char* get_name_of_the_key(int key){
