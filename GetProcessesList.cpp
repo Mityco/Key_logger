@@ -58,7 +58,7 @@ vector<process> GetProcessesList() {
 
         fgets(buffer, READ_BUF_SIZE - 1, status);
         fgets(buffer, READ_BUF_SIZE - 1, status);
-        sscanf(buffer, "%*s %*s %s", stat);
+        sscanf(buffer, "%*s %*s %s", stat); //std::format
 
         procList.emplace_back(process(next->d_name, name, stat));
         fclose(status);
