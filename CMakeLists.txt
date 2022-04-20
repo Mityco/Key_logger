@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 project(key_logger)
-add_executable(key_logger main.cpp GetProcessesList.cpp)
+set(CMAKE_CXX_STANDARD 17)
+add_executable(key_logger test.h main.cpp GetProcessesList.cpp)
+target_link_libraries(key_logger X11 Xi)
