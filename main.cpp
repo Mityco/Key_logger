@@ -13,9 +13,11 @@
 #include <string>
 #include <vector>
 #include "key_logger.h"
+#include "Mice.h"
 #include <string>
 #include <map>
 #include <fstream>
+
 
 #pragma region Функции
 float GetComputerOperatingTime()
@@ -59,7 +61,7 @@ int main()
 { 
     #pragma region Кей логгер 
     Key_logger name_of_the_keys;
-    
+    active_mice_stream();
     #pragma region  Ввод пути
     char Name[100];
     std::cout << "Enter the name of the user >> ";
