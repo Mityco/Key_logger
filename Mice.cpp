@@ -15,15 +15,6 @@
 
 #define MOUSEFILE "/dev/input/mice"
 
-std::string CurrentDateTime()
-{
-    std::string output = "Date:  ";
-    time_t seconds = time(nullptr);
-    tm* pTm = localtime(&seconds);
-    return output + asctime(pTm);
-}
-
-
 void active_mice_stream()
 {
     Display *display;

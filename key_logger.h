@@ -1,6 +1,6 @@
 #pragma once
+
 #include <map>
-#include <vector>
 std::string CurrentDateTime();
 int check(int result);
 bool isLetter(const int value);

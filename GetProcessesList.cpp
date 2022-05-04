@@ -42,7 +42,6 @@ std::vector<process> GetProcessesList() {
 
         if (!isdigit(*next->d_name))
             continue;
-
         sprintf(filename, "/proc/%s/status", next->d_name);
         if (!(status = fopen(filename, "r"))) { continue; }
 

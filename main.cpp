@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 #include "key_logger.h"
-#include "Mice.h"
 #include <string>
 #include <map>
 #include <fstream>
@@ -38,7 +37,6 @@ float GetComputerOperatingTime()
     fs.close();
     return a;
 }
-
 
 void print_list_processes(std::vector<process> processesList){
     for(size_t i = 0; i < processesList.size(); ++i){
@@ -66,7 +64,7 @@ int main()
 { 
 
     #pragma region Кей логгер 
-    //Key_logger name_of_the_keys;
+    Key_logger name_of_the_keys;
     
     #pragma region  Ввод пути
     char Name[100];
@@ -80,7 +78,7 @@ int main()
     #pragma endregion
 
     auto proceses = GetProcessesList();
-    //print_list_processes(proceses);
+    print_list_processes(proceses);
     // active_mice_stream();
     return 0;
 }

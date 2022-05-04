@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(kyrsovaya)
+project(application)
 set(CMAKE_CXX_STANDARD 17)
-add_executable(kursovaya main.cpp GetProcessesList.cpp)
-target_link_libraries(key_logger X11 Xi)
+add_executable(application main.cpp GetProcessesList.cpp key_logger.cpp Mice.cpp)
+target_link_libraries(application  X11 Xi)
