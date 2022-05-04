@@ -23,17 +23,6 @@ std::string CurrentDateTime()
     return output + asctime(pTm);
 }
 
-void coords(Display *display, int *x, int *y) {
-    XEvent event;
-    XQueryPointer(display, DefaultRootWindow(display),
-                  &event.xbutton.root, &event.xbutton.window,
-                  &event.xbutton.x_root, &event.xbutton.y_root,
-                  &event.xbutton.x, &event.xbutton.y,
-                  &event.xbutton.state);
-    *x = event.xbutton.x;
-    *y = event.xbutton.y;
-    std::cout<< x << "X coordinate , " << y << "Y coordinate "<< std::endl;
-}
 
 void active_mice_stream()
 {
@@ -79,7 +68,7 @@ void active_mice_stream()
     while (1) {
         if (time(NULL)-first > 5)
         {
-            std::cout<<"Aboba bezdeistvuet" << std::endl;
+            std::cout<<"Inaction" << std::endl;
             write_flag = false;
             first = second;
         }

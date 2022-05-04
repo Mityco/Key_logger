@@ -5,28 +5,21 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
-
+#include "GetProcessesList.h"
 #define READ_BUF_SIZE 512
 
 using namespace std;
 
-class process {
-private:
-    string _pid;
-    string _name;
-    string _status;
+process::process(string pid, string name, string status): _pid(pid), _status(status), _name(name){};
 
-public:
-    process(string pid, string name, string status): _pid(pid), _status(status), _name(name){};
+void process::printProcess(){
+    std::cout <<" Pid:" << _pid << std::endl;
+    std::cout <<" Name:" << _name << std::endl;
+    std::cout <<" Status:" << _status << std::endl << std::endl;
+}
 
-    void printProcess(){
-        std::cout <<" Pid:" << _pid << std::endl;
-        std::cout <<" Name:" << _name << std::endl;
-        std::cout <<" Status:" << _status << std::endl << std::endl;
-    }
-};
 
-vector<process> GetProcessesList() {
+std::vector<process> GetProcessesList() {
     DIR *dir;
     struct dirent *next;
     std::vector<process> procList;

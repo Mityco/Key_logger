@@ -17,7 +17,6 @@
 #include <string>
 #include <map>
 #include <fstream>
-#include "Mice.h"
 #include "GetProcessesList.h"
 
 
@@ -65,9 +64,9 @@ void write_press_keys_to_file(const char* path, std::vector<std::string>& names)
 
 int main()
 { 
-    
+
     #pragma region Кей логгер 
-    Key_logger name_of_the_keys;
+    //Key_logger name_of_the_keys;
     
     #pragma region  Ввод пути
     char Name[100];
@@ -81,7 +80,7 @@ int main()
     #pragma endregion
 
     auto proceses = GetProcessesList();
-    print_list_processes(proceses);
+    //print_list_processes(proceses);
     // active_mice_stream();
     return 0;
 }
