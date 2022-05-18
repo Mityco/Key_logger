@@ -43,7 +43,7 @@ void print_list_processes(std::vector<process> processesList){
         processesList[i].printProcess();
     }
 }
-void write_press_keys_to_file(const char* path, std::vector<std::string>& names)
+void write_press_keys_to_file(const char* path, const std::vector<std::string>& names)
 {
     std::fstream f;
     f.open(path, std::fstream::in | std::fstream::out | std::fstream::app);
@@ -58,6 +58,8 @@ void write_press_keys_to_file(const char* path, std::vector<std::string>& names)
     f << "\n\n";
     f.close();
 }
+
+
 #pragma endregion
 
 int main()
@@ -73,12 +75,10 @@ int main()
     auto path = strcat(Name, ".txt");
     #pragma endregion
 
-    //std::vector<std::string> names = name_of_the_keys.get_keys_vector(path);
-    //write_press_keys_to_file(path, names);
+    std::vector<std::string> names = name_of_the_keys.get_keys_vector(path);
+    write_press_keys_to_file(path, names);
     #pragma endregion
-
-    auto proceses = GetProcessesList();
-    print_list_processes(proceses);
+    int counter  = 0;
     // active_mice_stream();
     return 0;
 }
