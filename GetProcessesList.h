@@ -9,6 +9,7 @@ private:
 public:
     process(std::string pid, std::string name, std::string status);
     void printProcess();
+    std::string get_pid();
     
 };
 

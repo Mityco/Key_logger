@@ -17,7 +17,10 @@ void process::printProcess(){
     std::cout <<" Name:" << _name << std::endl;
     std::cout <<" Status:" << _status << std::endl << std::endl;
 }
-
+std::string process::get_pid()
+{
+    return _pid;
+}
 
 std::vector<process> GetProcessesList() {
     DIR *dir;
@@ -42,6 +45,7 @@ std::vector<process> GetProcessesList() {
 
         if (!isdigit(*next->d_name))
             continue;
+        
         sprintf(filename, "/proc/%s/status", next->d_name);
         if (!(status = fopen(filename, "r"))) { continue; }
 
@@ -51,8 +55,9 @@ std::vector<process> GetProcessesList() {
         fgets(buffer, READ_BUF_SIZE - 1, status);
         fgets(buffer, READ_BUF_SIZE - 1, status);
         sscanf(buffer, "%*s %*s %s", stat); //std::format
-
-        procList.emplace_back(process(next->d_name, name, stat));
+        
+        if (strcmp(stat,"(running)") == 0 || strcmp(stat,"(sleeping)") == 0)
+            procList.emplace_back(process(next->d_name, name, stat));
         fclose(status);
     }
     return procList;

