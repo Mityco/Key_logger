@@ -1,0 +1,9 @@
+# ninja log v5
+2249	2395	1654147320313639658	application	68f5e0dd5c80e880
+1	965	1654147318885508951	CMakeFiles/application.dir/main.cpp.o	75ed98ff80a7162b
+859	2249	1654147320169626920	CMakeFiles/application.dir/key_logger.cpp.o	b7f86bef9857706
+965	1507	1654147319429559429	CMakeFiles/application.dir/async_write.cpp.o	bf9d75120bff23e5
+5	858	1654147318781499010	CMakeFiles/application.dir/GetProcessesList.cpp.o	7c8ccb8b4a0145b2
+1	1057	1654147674196581923	CMakeFiles/application.dir/server.cpp.o	6de10a2bf17a80b5
+2	1829	1654147674968554601	CMakeFiles/application.dir/key_logger.cpp.o	b7f86bef9857706
+1829	1976	1654147675116549309	application	26e16c16b5a6b8bd

