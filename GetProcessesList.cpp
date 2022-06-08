@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
+#include <fcntl.h>
 #include "GetProcessesList.h"
 #define READ_BUF_SIZE 512
 

